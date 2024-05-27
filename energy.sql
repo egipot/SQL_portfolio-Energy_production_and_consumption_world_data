@@ -63,3 +63,56 @@ WHERE entity IN (SELECT entity FROM countries ) AND
 GROUP BY year, entity, bioenergy
 ORDER BY bioenergy DESC;
 
+
+--JOIN the production and consumption data using two conditions (entity and year)
+--Query the data for a specific entity / country and year, for example: Austria
+SELECT
+	ep.year,
+	ec.entity as entity, 
+	ep.oil as oil_production,
+	ec.oil as oil_consumption, 
+	ep.coal as coal_production, 
+	ec.coal as coal_consumption, 
+	ep.gas as gas_production,
+	ec.gas as gas_consumption, 
+	ep.hydro as hydro_production,
+	ec.hydro as hydro_consumption, 
+	ep.solar as solar_production,
+	ec.solar as solar_consumption, 
+	ep.wind as wind_production,
+	ec.wind as wind_consumption, 
+	ep.bioenergy as bioenergy_production,
+	--ec.bioenergy as bioenergy_consumption, 
+	ep.nuclear as nuclear_production,
+	ec.nuclear as nuclear_consumption, 
+	ep.other_renewables_excluding_bioenergy as other_renewables_production,
+	ec.other_renewables_including_geothermal_and_biomass as other_renewables_consumption
+FROM energyconsumptionbysource ec
+INNER JOIN electricityproductionbysource ep
+ON (ec.entity = ep.entity AND ec.year = ep.year)
+WHERE ep.entity = 'Austria' AND ep.year = 2022
+
+
+
+--Add a table showing the installed geothermal capacity per country, and import data from installed-geothermal-capacity.csv
+CREATE TABLE installedGeothermalCapacity (
+	entity TEXT, 
+	year INTEGER,
+	geothermalcap_MW DECIMAL
+);
+
+--JOIN the production and consumption data using two conditions (entity and year)
+--Query the data for a specific entity / country and year, for example: Austria
+SELECT
+	ep.year,
+	ec.entity as entity, 
+	i.solarcap_gigaw,
+	ep.solar as solar_production,
+	ec.solar as solar_consumption
+FROM energyconsumptionbysource ec
+INNER JOIN electricityproductionbysource ep
+ON (ec.entity = ep.entity AND ec.year = ep.year)
+INNER JOIN installedsolarcapacity i
+ON (i.entity = ep.entity AND i.year = ep.year)
+WHERE ep.entity = (SELECT entity FROM countries c WHERE c.entity = ep.entity)
+ORDER BY ep.year DESC, solarcap_gigaw DESC;
