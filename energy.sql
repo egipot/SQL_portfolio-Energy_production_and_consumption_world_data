@@ -116,3 +116,41 @@ INNER JOIN installedsolarcapacity i
 ON (i.entity = ep.entity AND i.year = ep.year)
 WHERE ep.entity = (SELECT entity FROM countries c WHERE c.entity = ep.entity)
 ORDER BY ep.year DESC, solarcap_gigaw DESC;
+
+
+--List the countries that first produced bioenergy
+SELECT * FROM 
+(SELECT 
+	year,
+	entity, 
+	bioenergy as "electricityFromBioenergy_TWh", 
+	DENSE_RANK() OVER(ORDER BY year ASC) as rank
+FROM electricityProductionBySource ep1
+WHERE entity IN (SELECT entity FROM countries )  
+GROUP BY ep1.year, entity, bioenergy
+HAVING bioenergy > 0
+ORDER BY bioenergy DESC)
+WHERE rank = 1
+
+
+--Evaluate the production and consumption data of the countries in each year
+SELECT 
+i.year, 
+i.entity, 
+solarcap_gigaw as installedSolarCapacity, 
+ep.solar as solarProduction,
+ec.solar as solarConsumption, 
+(CASE 
+ WHEN ec.solar IS NULL THEN 'incomplete data'
+ WHEN ep.solar >= ec.solar OR ep.solar = 0  THEN 'sufficient resource'
+ WHEN ep.solar < ec.solar THEN 'insufficient resource' 
+ END
+) as evaluation
+FROM installedSolarCapacity i
+INNER JOIN electricityproductionbysource ep
+ON (i.entity = ep.entity AND i.year = ep.year)
+INNER JOIN energyconsumptionbysource ec
+ON (i.entity = ec.entity AND i.year = ec.year)
+INNER JOIN countries c
+ON (c.entity = ep.entity)
+ORDER BY year ASC, entity ASC
